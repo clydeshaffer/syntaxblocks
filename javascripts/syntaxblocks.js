@@ -380,7 +380,18 @@ var testnode = [infixAssign(),
  //new CodeNode("if", [infixGT(), [infixAssign(), infixAssign(), infixAssign(), infixAssign(), infixAssign()]])];
 
 
-RenderFromRoot(parse(prompt("put code here")));
+//RenderFromRoot(parse(prompt("put code here")));
+
+function getParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+var codeStr = getParameterByName("codestring");
+RenderFromRoot(parse(codeStr));
+
 //alert(writeCode(displayedRoot, 1));
 
 
