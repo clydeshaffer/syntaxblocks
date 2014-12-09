@@ -390,6 +390,7 @@ function getParameterByName(name) {
 }
 
 var codeStr = getParameterByName("codestring");
+if(!codeStr && codeStr === "") codeStr = prompt("enter code here");
 RenderFromRoot(parse(codeStr));
 
 //alert(writeCode(displayedRoot, 1));
