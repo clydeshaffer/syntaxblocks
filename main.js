@@ -1,10 +1,14 @@
 ///////////////////////////////////////////////////////RENDERING
 var canvas = document.getElementById("mainView");
-
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
-
 var ctx = canvas.getContext("2d");
+
+
+var menuCanvas = document.getElementById("menuView");
+menuCanvas.width = window.innerWidth;
+menuCanvas.height = window.innerHeight;
+var menuCtx = menuCanvas.getContext("2d");
 
 var maxBlocksVertical = 2;
 
@@ -353,6 +357,69 @@ var writeCode = function(node, indent) {
 
   return code;
 }
+/////////////////////////////////////////////////////MENU SYSTEM
+
+/////////RENDERING
+var nullMenu = [];
+
+//todo create separate menubuilder dev gui to create json format menu
+
+var MenuItem = function(title, children) {
+	this.title = title;
+	this.children = children || nullMenu;
+	if(this.children.length != 0) this.children = this.children.map(function (x) {
+		if(typeof x == "string") {
+			return new MenuItem(x);
+		} else {
+			return x;
+		}
+	});
+}
+
+var menuRoot = [
+
+	new MenuItem("Math Ops", ["+", "-", "/", "*"]),
+	new MenuItem("Expression" , ["function", "array", "object", "call", "conditional"]),
+	new MenuItem("statement", ["return", "this", "for", "while", "if"])
+
+];
+
+var currentMenu = nullMenu;
+
+var drawMenu = function (entries) {
+	menuCanvas.width = window.innerWidth;
+	menuCanvas.height = window.innerHeight;
+	menuCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+	currentMenu = entries;
+	
+	if(currentMenu.length > 0) {
+		menuCtx.globalAlpha = 0.5;
+		menuCtx.fillStyle = "black";
+		menuCtx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+		
+		menuCtx.textAlign = "center";
+		menuCtx.textBaseline = "middle";
+		menuCtx.fillStyle = "white";
+		menuCtx.globalAlpha = 1;
+		
+		var size = Math.floor(window.innerHeight / currentMenu.length) / 2;
+    	menuCtx.font = size + "pt Times";
+		
+		var i;
+		for(i = 0; i < currentMenu.length; i ++) {
+			menuCtx.fillText(currentMenu[i].title, window.innerWidth / 2, i * (window.innerHeight / currentMenu.length) + size/2);
+		}
+	}
+}
+
+var checkMenu = function(x, y) {
+	var i = currentMenu.length - 1;
+	while(i >= 0) {
+		if(y > i * (window.innerHeight / currentMenu.length)) return currentMenu[i];
+		i --;
+	}
+	return null;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////DEMO
 var infixGT = function () {
@@ -410,7 +477,7 @@ window.onkeydown = function(e) {
   }
 }
 
-var mc = new Hammer.Manager(canvas);
+var mc = new Hammer.Manager(document.body);
 
 mc.add(new Hammer.Tap({event: 'doubletap', taps: 2, posThreshold: 32}) );
 mc.add(new Hammer.Tap({event: 'singletap'}) );
@@ -425,40 +492,45 @@ mc.on("swiperight", function(ev) {
 });
 
 mc.on("singletap", function(ev) {
-		console.log(ev);
-		var e = ev.pointers[0];
-	  var node = null;
-		var i = 0;
-		if(Array.isArray(displayedRoot)) {
-		  while(i < displayedRoot.length && node === null) {
-			node = nodeAt(displayedRoot[i], e.pageX, e.pageY, 10);
-			i++;
-		 }
-		} else {
-		  node = nodeAt(displayedRoot, e.pageX, e.pageY, 10);
-		}
-		if(node) {
-		  //alert(writeCode(node, 1));
-		  if(node.blank) {
-				node.blank = false;
-				node.name = "new code";
-				RenderFromRoot(displayedRoot);
-				//window.scrollTo(0, node.y);
-		  } else {
-			var target = traverseUpToBlock(node);
-			//if(target === displayedRoot) target = node;
-			RenderFromRoot(target);
-		  }
-		} else {
-			appendBlank();
-		}
+	var menuItem = checkMenu(ev.pointers[0].pageX, ev.pointers[0].pageY);
+	if(menuItem === null) {
+			var e = ev.pointers[0];
+			var node = null;
+			var i = 0;
+			if(Array.isArray(displayedRoot)) {
+			  while(i < displayedRoot.length && node === null) {
+				node = nodeAt(displayedRoot[i], e.pageX, e.pageY, 10);
+				i++;
+			 }
+			} else {
+			  node = nodeAt(displayedRoot, e.pageX, e.pageY, 10);
+			}
+			if(node) {
+			  //alert(writeCode(node, 1));
+			  if(node.blank) {
+					node.blank = false;
+					node.name = "new code";
+					RenderFromRoot(displayedRoot);
+					//window.scrollTo(0, node.y);
+			  } else {
+				var target = traverseUpToBlock(node);
+				//if(target === displayedRoot) target = node;
+				RenderFromRoot(target);
+			  }
+			} else {
+				appendBlank();
+				drawMenu(menuRoot);
+			}
+	} else {
+		drawMenu(menuItem.children);
+	}
 });
 
-mc.on("doubletap", function(ev) {
+/*mc.on("doubletap", function(ev) {
 	var node = null;
 	var e = ev.pointers[0];
 	node = nodeAt(displayedRoot, e.pageX, e.pageY, 10);
 	if(node) {
 		alert(writeCode(node, 1));
 	}
-});
+});*/
